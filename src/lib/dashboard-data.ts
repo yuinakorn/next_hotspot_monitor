@@ -173,3 +173,160 @@ export async function getTopDataUsers(limit: number = 5): Promise<TopDataUser[]>
         connection.release();
     }
 }
+
+// --- User Management Types & Functions ---
+
+export interface ServicePlan {
+    srvid: number;
+    srvname: string;
+    unitprice?: number;
+    unit?: string;
+}
+
+export interface UserManagementData {
+    username: string;
+    password?: string; // Only for input/display if needed, sensitive
+    firstname: string;
+    lastname: string;
+    company: string;
+    srvid: number | null;
+    srvname?: string; // Display only
+    created?: string;
+}
+
+export async function getAllUsers(): Promise<UserManagementData[]> {
+    const connection = await pool.getConnection();
+    try {
+        const [rows] = await connection.query<RowDataPacket[]>(`
+            SELECT 
+                u.username,
+                u.firstname,
+                u.lastname,
+                u.company,
+                u.srvid,
+                s.srvname,
+                MAX(CASE WHEN r.attribute = 'Cleartext-Password' THEN r.value END) as password
+            FROM rm_users u
+            LEFT JOIN rm_services s ON u.srvid = s.srvid
+            LEFT JOIN radcheck r ON u.username = r.username
+            GROUP BY u.username, u.firstname, u.lastname, u.company, u.srvid, s.srvname
+            ORDER BY u.username ASC
+        `);
+        return rows as UserManagementData[];
+    } finally {
+        connection.release();
+    }
+}
+
+export async function getServices(): Promise<ServicePlan[]> {
+    const connection = await pool.getConnection();
+    try {
+        const [rows] = await connection.query<RowDataPacket[]>('SELECT * FROM rm_services');
+        return rows as ServicePlan[];
+    } finally {
+        connection.release();
+    }
+}
+
+export async function createUser(userData: UserManagementData): Promise<void> {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 1. Insert into rm_users
+        await connection.query(`
+            INSERT INTO rm_users (username, firstname, lastname, company, srvid)
+            VALUES (?, ?, ?, ?, ?)
+        `, [userData.username, userData.firstname, userData.lastname, userData.company, userData.srvid]);
+
+        // 2. Insert into radcheck (Password)
+        if (userData.password) {
+            await connection.query(`
+                INSERT INTO radcheck (username, attribute, op, value)
+                VALUES (?, 'Cleartext-Password', ':=', ?)
+            `, [userData.username, userData.password]);
+
+            // Included based on common pattern in uploaded image: Simultaneous-Use := 3
+            await connection.query(`
+                INSERT INTO radcheck (username, attribute, op, value)
+                VALUES (?, 'Simultaneous-Use', ':=', '3')
+            `, [userData.username]);
+        }
+
+        await connection.commit();
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+}
+
+export async function updateUser(username: string, userData: Partial<UserManagementData>): Promise<void> {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 1. Update rm_users
+        // Build dynamic query for rm_users
+        const userFields: string[] = [];
+        const userValues: any[] = [];
+
+        if (userData.firstname !== undefined) { userFields.push('firstname = ?'); userValues.push(userData.firstname); }
+        if (userData.lastname !== undefined) { userFields.push('lastname = ?'); userValues.push(userData.lastname); }
+        if (userData.company !== undefined) { userFields.push('company = ?'); userValues.push(userData.company); }
+        if (userData.srvid !== undefined) { userFields.push('srvid = ?'); userValues.push(userData.srvid); }
+
+        if (userFields.length > 0) {
+            userValues.push(username);
+            await connection.query(`UPDATE rm_users SET ${userFields.join(', ')} WHERE username = ?`, userValues);
+        }
+
+        // 2. Update radcheck (Password) if provided
+        if (userData.password) {
+            // Check if password entry exists
+            const [rows] = await connection.query<RowDataPacket[]>(
+                "SELECT id FROM radcheck WHERE username = ? AND attribute = 'Cleartext-Password'",
+                [username]
+            );
+
+            if (rows.length > 0) {
+                await connection.query(
+                    "UPDATE radcheck SET value = ? WHERE username = ? AND attribute = 'Cleartext-Password'",
+                    [userData.password, username]
+                );
+            } else {
+                await connection.query(`
+                    INSERT INTO radcheck (username, attribute, op, value)
+                    VALUES (?, 'Cleartext-Password', ':=', ?)
+                `, [username, userData.password]);
+            }
+        }
+
+        await connection.commit();
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+}
+
+export async function deleteUser(username: string): Promise<void> {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        await connection.query('DELETE FROM rm_users WHERE username = ?', [username]);
+        await connection.query('DELETE FROM radcheck WHERE username = ?', [username]);
+        // Also clean up radacct? Maybe optional, but good for privacy/cleanup. 
+        // Keeping accounting logs is usually preferred, so skipping radacct delete.
+
+        await connection.commit();
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+}
