@@ -1,5 +1,6 @@
 import pool from './db';
 import { RowDataPacket } from 'mysql2';
+import crypto from 'crypto';
 
 interface DashboardSummary {
     activeUsers: number;
@@ -259,10 +260,26 @@ export async function createUser(userData: UserManagementData): Promise<void> {
         }
 
         // 1. Insert into rm_users
+        // MD5 hash the password
+        const md5Password = userData.password
+            ? crypto.createHash('md5').update(userData.password).digest('hex')
+            : '';
+
         await connection.query(`
-            INSERT INTO rm_users (username, firstname, lastname, company, srvid)
-            VALUES (?, ?, ?, ?, ?)
-        `, [userData.username, userData.firstname, userData.lastname, userData.company, finalSrvId]);
+            INSERT INTO rm_users (
+                username, firstname, lastname, company, srvid, 
+                password, groupid, enableuser, expiration, createdon, 
+                createdby, owner, lang, autorenew
+            )
+            VALUES (?, ?, ?, ?, ?, ?, 1, 1, NOW(), NOW(), 'admin_web', 'admin', 'English', 1)
+        `, [
+            userData.username,
+            userData.firstname,
+            userData.lastname,
+            userData.company,
+            finalSrvId,
+            md5Password
+        ]);
 
         // 2. Insert into radcheck (Password)
         if (userData.password) {
