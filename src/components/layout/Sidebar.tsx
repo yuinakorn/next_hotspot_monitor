@@ -14,7 +14,7 @@ export function Sidebar() {
     <div className="w-64 bg-slate-900 h-screen fixed left-0 top-0 text-white flex flex-col font-sans z-50">
       <div className="p-6 border-b border-slate-700 flex items-center gap-3">
         <Activity className="h-8 w-8 text-blue-400" />
-        <span className="text-xl font-bold tracking-wide">Monitor Hub</span>
+        <span className="text-xl font-bold tracking-wide">RADIUS Report</span>
       </div>
       
       <nav className="flex-1 p-4 space-y-1">

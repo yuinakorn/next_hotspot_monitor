@@ -44,7 +44,7 @@ export function ExportButton({ data, filename = 'export.csv' }: ExportButtonProp
   return (
     <button
       onClick={handleExport}
-      className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-colors"
+      className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer"
     >
       <Download className="h-4 w-4" />
       Export CSV

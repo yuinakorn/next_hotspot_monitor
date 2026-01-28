@@ -5,6 +5,7 @@ interface DashboardSummary {
     activeUsers: number;
     inactiveUsers: number;
     totalUsers: number;
+    onlineUsers: number;
     activePercentage: string;
 }
 
@@ -41,6 +42,14 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     `);
         const activeUsers = activeRows[0].count;
 
+        // Online Users: users where acctstoptime is today (as requested by user)
+        const [onlineRows] = await connection.query<RowDataPacket[]>(`
+            SELECT COUNT(DISTINCT username) as count 
+            FROM radacct 
+            WHERE DATE(acctstoptime) = CURDATE()
+        `);
+        const onlineUsers = onlineRows[0].count;
+
         const inactiveUsers = totalUsers - activeUsers;
         const activePercentage = totalUsers > 0
             ? ((activeUsers / totalUsers) * 100).toFixed(2)
@@ -50,6 +59,7 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
             activeUsers,
             inactiveUsers,
             totalUsers,
+            onlineUsers,
             activePercentage,
         };
     } finally {

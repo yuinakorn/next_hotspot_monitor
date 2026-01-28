@@ -28,7 +28,14 @@ export default async function DashboardPage() {
         <main className="flex-1 overflow-y-auto p-8 mt-16">
           
           {/* KPI Section */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <KpiCard 
+              title="Online Users" 
+              value={summary.onlineUsers} 
+              icon={Activity} 
+              trend="now"
+              className="border-green-100"
+            />
             <KpiCard 
               title="Active Users" 
               value={summary.activeUsers} 
@@ -65,9 +72,12 @@ export default async function DashboardPage() {
                   {summary.inactiveUsers} users have not logged in for over 90 days. 
                   Consider reviewing these accounts.
                 </p>
-                <button className="w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors text-sm">
+                <a 
+                  href="/api/reports/inactive-users"
+                  className="block w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors text-sm text-center"
+                >
                   Generate Report
-                </button>
+                </a>
               </div>
 
               <TopUsersCard users={topUsers} />
