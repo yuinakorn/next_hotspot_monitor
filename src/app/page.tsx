@@ -5,6 +5,7 @@ import { TrendChart } from '@/components/dashboard/TrendChart';
 import { NetworkChart } from '@/components/dashboard/NetworkChart';
 import { TopUsersCard } from '@/components/dashboard/TopUsersCard';
 import { InactiveUserTable } from '@/components/dashboard/InactiveUserTable';
+import { OnlineUsersCard } from '@/components/dashboard/OnlineUsersCard';
 import { getDashboardSummary, getLoginTrends, getInactiveUsers, getDailyNetworkUsage, getTopDataUsers } from '@/lib/dashboard-data';
 import { Users, UserX, Activity } from 'lucide-react';
 
@@ -29,10 +30,9 @@ export default async function DashboardPage() {
           
           {/* KPI Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <KpiCard 
+            <OnlineUsersCard 
               title="Online Users" 
               value={summary.onlineUsers} 
-              icon={Activity} 
               trend="now"
               className="border-green-100"
             />
