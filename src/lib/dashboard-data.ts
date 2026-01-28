@@ -246,11 +246,23 @@ export async function createUser(userData: UserManagementData): Promise<void> {
     try {
         await connection.beginTransaction();
 
+        let finalSrvId = userData.srvid;
+
+        if (!finalSrvId) {
+            // Fetch default service (first available)
+            const [services] = await connection.query<RowDataPacket[]>('SELECT srvid FROM rm_services ORDER BY srvid ASC LIMIT 1');
+            if (services.length > 0) {
+                finalSrvId = services[0].srvid;
+            } else {
+                throw new Error('No service plans available. Please create a service plan first.');
+            }
+        }
+
         // 1. Insert into rm_users
         await connection.query(`
             INSERT INTO rm_users (username, firstname, lastname, company, srvid)
             VALUES (?, ?, ?, ?, ?)
-        `, [userData.username, userData.firstname, userData.lastname, userData.company, userData.srvid]);
+        `, [userData.username, userData.firstname, userData.lastname, userData.company, finalSrvId]);
 
         // 2. Insert into radcheck (Password)
         if (userData.password) {
