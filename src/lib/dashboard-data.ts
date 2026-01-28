@@ -330,8 +330,8 @@ export async function deleteUser(username: string): Promise<void> {
     try {
         await connection.beginTransaction();
 
-        await connection.query('DELETE FROM rm_users WHERE username = ?', [username]);
         await connection.query('DELETE FROM radcheck WHERE username = ?', [username]);
+        await connection.query('DELETE FROM rm_users WHERE username = ?', [username]);
         // Also clean up radacct? Maybe optional, but good for privacy/cleanup. 
         // Keeping accounting logs is usually preferred, so skipping radacct delete.
 
