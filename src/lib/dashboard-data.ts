@@ -63,8 +63,17 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
             onlineUsers,
             activePercentage,
         };
+    } catch (e) {
+        console.warn('Dashboard summary fetch failed (likely build time or DB down):', e);
+        return {
+            activeUsers: 0,
+            inactiveUsers: 0,
+            totalUsers: 0,
+            onlineUsers: 0,
+            activePercentage: '0.00',
+        };
     } finally {
-        connection.release();
+        if (connection) connection.release();
     }
 }
 
@@ -82,8 +91,11 @@ export async function getLoginTrends(days: number = 30): Promise<LoginTrend[]> {
     `, [days]);
 
         return rows as LoginTrend[];
+    } catch (e) {
+        console.warn('Login trends fetch failed:', e);
+        return [];
     } finally {
-        connection.release();
+        if (connection) connection.release();
     }
 }
 
@@ -109,8 +121,11 @@ export async function getInactiveUsers(daysThreshold: number = 90): Promise<Inac
     `, [daysThreshold]);
 
         return rows as InactiveUser[];
+    } catch (e) {
+        console.warn('Inactive users fetch failed:', e);
+        return [];
     } finally {
-        connection.release();
+        if (connection) connection.release();
     }
 }
 
@@ -148,8 +163,11 @@ export async function getDailyNetworkUsage(days: number = 30): Promise<DailyNetw
             download: Number((row.download / 1073741824).toFixed(2)), // Convert Bytes to GB
             upload: Number((row.upload / 1073741824).toFixed(2))     // Convert Bytes to GB
         }));
+    } catch (e) {
+        console.warn('Network usage fetch failed:', e);
+        return [];
     } finally {
-        connection.release();
+        if (connection) connection.release();
     }
 }
 
@@ -180,8 +198,11 @@ export async function getTopDataUsers(limit: number = 5): Promise<TopDataUser[]>
             totalUpload: Number((row.totalUpload / 1073741824).toFixed(2)),
             totalUsage: Number((row.totalUsage / 1073741824).toFixed(2))
         }));
+    } catch (e) {
+        console.warn('Top data users fetch failed:', e);
+        return [];
     } finally {
-        connection.release();
+        if (connection) connection.release();
     }
 }
 

@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  app:
+    container_name: next_hotspot_monitor
+    image: next_hotspot_monitor:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    # Optional: If you need to map timezone
+    # volumes:
+    #   - /etc/localtime:/etc/localtime:ro
+    #   - /etc/timezone:/etc/timezone:ro
