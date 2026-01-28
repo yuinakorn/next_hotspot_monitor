@@ -10,6 +10,8 @@ services:
     restart: always
     ports:
       - "3000:3000"
+    environment:
+      - DISABLE_SECURE_COOKIE=true
     env_file:
       - .env
     # Optional: If you need to map timezone

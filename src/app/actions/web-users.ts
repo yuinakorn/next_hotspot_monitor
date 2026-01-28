@@ -132,7 +132,7 @@ export async function updateProfile(formData: FormData) {
         cookieStore.set('auth_token', newSession, {
             expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: process.env.NODE_ENV === 'production' && !process.env.DISABLE_SECURE_COOKIE,
             path: '/'
         });
 
