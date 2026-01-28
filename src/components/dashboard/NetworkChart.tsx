@@ -17,7 +17,7 @@ export function NetworkChart({ data }: NetworkChartProps) {
         <span className="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full">Last 30 Days</span>
       </div>
       
-      <div className="h-[300px] w-full">
+      <div className="h-[300px] w-full min-w-0">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} stackOffset="sign">
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />

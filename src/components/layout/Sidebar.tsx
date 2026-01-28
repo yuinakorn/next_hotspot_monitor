@@ -45,16 +45,16 @@ export function Sidebar() {
         </Link>
 
         <Link 
-          href="/settings" 
+          href="/settings/users" 
           className={cn(
             "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors group",
-            isActive('/settings') 
+            isActive('/settings/users') 
               ? "bg-slate-800 text-blue-400" 
               : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
           )}
         >
-          <Settings className={cn("h-5 w-5", isActive('/settings') ? "text-blue-400" : "text-slate-400 group-hover:text-slate-100")} />
-          <span className="font-medium">Settings</span>
+          <Settings className={cn("h-5 w-5", isActive('/settings/users') ? "text-blue-400" : "text-slate-400 group-hover:text-slate-100")} />
+          <span className="font-medium">System Users</span>
         </Link>
       </nav>
 
