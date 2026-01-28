@@ -192,6 +192,7 @@ export interface UserManagementData {
     srvid: number | null;
     srvname?: string; // Display only
     created?: string;
+    last_seen?: string | null;
 }
 
 export async function getAllUsers(): Promise<UserManagementData[]> {
@@ -204,12 +205,14 @@ export async function getAllUsers(): Promise<UserManagementData[]> {
                 u.lastname,
                 u.company,
                 u.srvid,
+                u.createdon as created,
                 s.srvname,
-                MAX(CASE WHEN r.attribute = 'Cleartext-Password' THEN r.value END) as password
+                MAX(CASE WHEN r.attribute = 'Cleartext-Password' THEN r.value END) as password,
+                (SELECT MAX(acctstarttime) FROM radacct WHERE username = u.username) as last_seen
             FROM rm_users u
             LEFT JOIN rm_services s ON u.srvid = s.srvid
             LEFT JOIN radcheck r ON u.username = r.username
-            GROUP BY u.username, u.firstname, u.lastname, u.company, u.srvid, s.srvname
+            GROUP BY u.username, u.firstname, u.lastname, u.company, u.srvid, u.createdon, s.srvname
             ORDER BY u.username ASC
         `);
         return rows as UserManagementData[];

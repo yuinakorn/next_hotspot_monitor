@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { UserManagementData, ServicePlan } from '@/lib/dashboard-data';
-import { Search, Edit, Trash2, Plus, Users } from 'lucide-react';
+import { Search, Edit, Trash2, Plus, Users, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { UserModal } from './UserModal';
 
 interface UserManagementTableProps {
@@ -17,6 +17,7 @@ export function UserManagementTable({ initialUsers, services }: UserManagementTa
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserManagementData | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
   // Filter
   const filteredUsers = users.filter(u => {
@@ -36,7 +37,44 @@ export function UserManagementTable({ initialUsers, services }: UserManagementTa
       u.srvid === Number(serviceFilter);
 
     return matchesSearch && matchesService;
+  }).sort((a, b) => {
+    if (!sortConfig) return 0;
+    
+    const { key, direction } = sortConfig;
+    let aValue: any = a[key as keyof UserManagementData];
+    let bValue: any = b[key as keyof UserManagementData];
+
+    // Special handling for calculated/composite fields
+    if (key === 'name') {
+        aValue = `${a.firstname} ${a.lastname}`;
+        bValue = `${b.firstname} ${b.lastname}`;
+    }
+
+    if (aValue === bValue) return 0;
+    
+    // Handle null/undefined - push to bottom usually, or standard comparison
+    if (aValue === null || aValue === undefined) return 1;
+    if (bValue === null || bValue === undefined) return -1;
+
+    const compareResult = aValue < bValue ? -1 : 1;
+    return direction === 'asc' ? compareResult : -compareResult;
   });
+
+  const handleSort = (key: string) => {
+    setSortConfig(current => {
+        if (current?.key === key) {
+            return { key, direction: current.direction === 'asc' ? 'desc' : 'asc' };
+        }
+        return { key, direction: 'asc' };
+    });
+  };
+
+  const SortIcon = ({ columnKey }: { columnKey: string }) => {
+      if (sortConfig?.key !== columnKey) return <ArrowUpDown className="w-4 h-4 text-slate-300" />;
+      return sortConfig.direction === 'asc' 
+        ? <ArrowUp className="w-4 h-4 text-blue-600" />
+        : <ArrowDown className="w-4 h-4 text-blue-600" />;
+  };
 
   async function refreshData() {
     const res = await fetch('/api/users');
@@ -132,16 +170,41 @@ export function UserManagementTable({ initialUsers, services }: UserManagementTa
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-50 text-slate-500 uppercase font-medium border-b border-slate-200">
               <tr>
-                <th className="px-6 py-4">Username</th>
-                <th className="px-6 py-4">Name</th>
-                <th className="px-6 py-4">Company</th>
-                <th className="px-6 py-4">Service</th>
-                <th className="px-6 py-4">Created</th>
+                <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('username')}>
+                    <div className="flex items-center gap-2">Username <SortIcon columnKey="username" /></div>
+                </th>
+                <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('name')}>
+                    <div className="flex items-center gap-2">Name <SortIcon columnKey="name" /></div>
+                </th>
+                <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('company')}>
+                    <div className="flex items-center gap-2">Company <SortIcon columnKey="company" /></div>
+                </th>
+                <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('srvname')}>
+                    <div className="flex items-center gap-2">Service <SortIcon columnKey="srvname" /></div>
+                </th>
+                <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('created')}>
+                     <div className="flex items-center gap-2">Created <SortIcon columnKey="created" /></div>
+                </th>
+                <th className="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('last_seen')}>
+                     <div className="flex items-center gap-2">Last Seen <SortIcon columnKey="last_seen" /></div>
+                </th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredUsers.map((user) => (
+              {filteredUsers.map((user) => {
+                const formatLastSeen = (dateString?: string | null) => {
+                   if (!dateString) return '-';
+                   const now = new Date();
+                   const date = new Date(dateString);
+                   const diffTime = Math.abs(now.getTime() - date.getTime());
+                   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                   
+                   if (diffDays <= 1) return 'Today';
+                   return `${diffDays} days`;
+                };
+
+                return (
                 <tr key={user.username} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4 font-semibold text-slate-900">
                     {user.username}
@@ -162,7 +225,10 @@ export function UserManagementTable({ initialUsers, services }: UserManagementTa
                     </span>
                   </td>
                   <td className="px-6 py-4 text-slate-500">
-                    {user.created ? new Date(user.created).toLocaleDateString() : '-'}
+                    {user.created ? new Date(user.created).toISOString().split('T')[0] : '-'}
+                  </td>
+                  <td className="px-6 py-4 text-slate-500">
+                     {formatLastSeen(user.last_seen)}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -184,10 +250,11 @@ export function UserManagementTable({ initialUsers, services }: UserManagementTa
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {filteredUsers.length === 0 && (
                 <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-slate-400 bg-slate-50/30">
+                    <td colSpan={7} className="px-6 py-12 text-center text-slate-400 bg-slate-50/30">
                         {users.length === 0 ? 'No users found.' : 'No matches found.'}
                     </td>
                 </tr>
